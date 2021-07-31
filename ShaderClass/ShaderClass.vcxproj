@@ -130,6 +130,9 @@
     <ClCompile Include="..\..\..\glfw-3.3.4.bin.WIN32\glad\src\glad.c" />
     <ClCompile Include="ShaderFileClass.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Shader.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
