@@ -18,7 +18,7 @@
     <ClCompile Include="..\..\..\glfw-3.3.4.bin.WIN32\glad\src\glad.c">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="ShaderFileClass.cpp">
+    <ClCompile Include="Shader_Class.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -26,5 +26,13 @@
     <ClInclude Include="Shader.h">
       <Filter>头文件</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shader.vs">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="Shader.fs">
+      <Filter>源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>
