@@ -63,6 +63,268 @@ float texCoords[] = {
     ```
 ### 讨论点2：纹理过滤
 ### 知识点总结：
-- 知识点1：纹理坐标不依赖于分辨率(Resolution)，它可以是任意浮点值，所以OpenGL需要知道怎样将纹理像素(Texture Pixel，也叫Texel，译注1)映射到纹理坐标
-  
+- 知识点1：纹理坐标不依赖于分辨率(Resolution)，它可以是任意浮点值，所以OpenGL需要知道怎样将纹理像素(Texture Pixel，也叫Texel，译注1)映射到纹理坐标。
+- 知识点2：纹理过滤(Texture Filtering)的选项：GL_NEAREST和GL_LINEAR
+- 知识点3：纹理坐标是给模型顶点设置的那个数组，OpenGL以这个顶点的纹理坐标数据去查找纹理图像上的像素，然后进行采样提取纹理像素的颜色。
+    - GL_NEAREST（也叫邻近过滤，Nearest Neighbor Filtering）：OpenGL默认的纹理过滤方式；当设置为此种方式时，OpenGL会选择中心点最接近纹理坐标的那个像素。
+   
+   <div align="center">
+   <img src="https://learnopengl-cn.github.io/img/01/06/filter_nearest.png"/>
+   </div>
+   
+    - GL_LINEAR（也叫线性过滤，(Bi)linear Filtering）:基于纹理坐标附近的纹理像素，计算出一个插值，近似出这些纹理像素之间的颜色。一个纹理像素的中心距离纹理坐标越近，那么这个纹理像素的颜色对最终的样本颜色的贡献越大，是个混合色。
+    <div align="center">
+    <img src="https://learnopengl-cn.github.io/img/01/06/filter_linear.png"/>
+    </div>
+    GL_NEAREST产生了颗粒状的图案，能够清晰看到组成纹理的像素，而GL_LINEAR能够产生更平滑的图案，很难看出单个的纹理像素。
+<div align="center">
+<img src="https://learnopengl-cn.github.io/img/01/06/texture_filtering.png"/>
+</div>
+    当进行放大(Magnify)和缩小(Minify)操作的时候可以设置纹理过滤的选项，比如你可以在纹理被缩小的时候使用邻近过滤，被放大时使用线性过滤。使用glTexParameter*函数为放大和缩小指定过滤方式。
+    
+```c++
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+```
+### 讨论点3：多级渐远纹理
+### 知识点总结：
+- 知识点1：多级渐远纹理(Mipmap):距观察者的距离超过一定的阈值，OpenGL会使用不同的多级渐远纹理，即最适合物体的距离的那个;
+<div align="center">
+<img src="https://learnopengl-cn.github.io/img/01/06/mipmaps.png"/>
+</div>
 
+- 知识点2：glGenerateMipmaps函数用来完成一系列多级渐进纹理；
+
+- 知识点3：在渲染中切换多级渐远纹理级别(Level)时，OpenGL在两个不同级别的多级渐远纹理层之间会产生不真实的生硬边界。就像普通的纹理过滤一样，切换多级渐远纹理级别时你也可以在两个不同多级渐远纹理级别之间使用NEAREST和LINEAR过滤。 
+    
+    | 过滤方式 | 描述 |
+    | ---- | ---- |
+    |GL_NEAREST_MIPMAP_NEAREST|	使用最邻近的多级渐远纹理来匹配像素大小，并使用邻近插值进行纹理采样|
+    |GL_LINEAR_MIPMAP_NEAREST|	使用最邻近的多级渐远纹理级别，并使用线性插值进行采样|
+    |GL_NEAREST_MIPMAP_LINEAR|	在两个最匹配像素大小的多级渐远纹理之间进行线性插值，使用邻近插值进行采样|
+    |GL_LINEAR_MIPMAP_LINEAR|在两个邻近的多级渐远纹理之间使用线性插值，并使用线性插值进行采样|
+    
+    可以采用glTexParameteri函数来设置过滤方式：
+    
+    ```C++ 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    ```
+    <font color=red>常见错误：</font>将放大过滤的选项设置为多级渐远纹理过滤选项之一。这样没有任何效果，因为多级渐远纹理主要是使用在纹理被缩小的情况下的：纹理放大不会使用多级渐远纹理，为放大过滤设置多级渐远纹理的选项会产生一个GL_INVALID_ENUM错误代码。
+
+### 讨论点4：加载与创建纹理
+### 知识点总结：
+- 知识点1：纹理图像可能被储存为各种各样的格式，每种都有自己的数据结构和排列，需要找特定的文件格式，写一个图像加载器，把图像转化为字节序列。
+- 知识点2：stb_image.h是Sean Barrett的一个非常流行的单头文件图像加载库，它能够加载大部分流行的文件格式，并且能够很简单得整合到你的工程之中，这个库可以在这个网站下载 https://github.com/nothings/stb/blob/master/stb_image.h 
+- 知识点3： 下载头文件，将它以stb_image.h的名字加入工程，并另创建一个新的C++文件，输入以下代码
+    ```c++
+    #define STB_IMAGE_IMPLEMENTATION
+    #include "stb_image.h"
+    ```
+    通过定义STB_IMAGE_IMPLEMENTATION，预处理器会修改头文件，让其只包含相关的函数定义源码，等于是将这个头文件变为一个 .cpp 文件了。现在只需要在你的程序中包含stb_image.h并编译就可以了
+- 知识点4: 使用stb_image.h加载图片，需要使用它的stbi_load函数，具体代码如下：
+    ```c++
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load("container.jpg", &width, &height, &nrChannels, 0);
+    ```
+    该函数首先接受一个图像文件的位置作为输入。随后需要三个int作为它的第二、第三和第四个参数，stb_image.h将会用图像的宽度、高度和颜色通道的个数填充这三个变量
+
+### 讨论点5：生成纹理
+### 知识点总结：
+- 知识点1：生成纹理的流程、步骤：
+  + 第1步：创建纹理的ID引用：纹理也是使用ID引用的，具体创建方式如下：
+    ```c++
+    unsigned int texture;
+    glGenTextures(1, &texture); 
+    ```
+   函数中的第一个参数是需要输入生成纹理的数量，并把它们储存在第二个参数的unsigned int数组中（我们的例子中只是单独的一个unsigned int）
+
+  + 第2步：绑定纹理：
+   ```c++
+   glBindTexture(GL_TEXTURE_2D, texture);
+   ```
+  + 第3步： 通过glTexImage2D将载入的图片数据生成纹理
+   ```c++
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+   glGenerateMipmap(GL_TEXTURE_2D);
+   ```
+    函数中传入的参数分别为：<font color=green>
+    - 第一个参数指定了纹理目标(Target)。设置为GL_TEXTURE_2D意味着会生成与当前绑定的纹理对象在同一个目标上的纹理（任何绑定到GL_TEXTURE_1D和GL_TEXTURE_3D的纹理不会受到影响）。
+    - 第二个参数为纹理指定多级渐远纹理的级别，如果你希望单独手动设置每个多级渐远纹理的级别的话。这里我们填0，也就是基本级别。
+    - 第三个参数告诉OpenGL我们希望把纹理储存为何种格式。我们的图像只有RGB值，因此我们也把纹理储存为RGB值。
+    - 第四个和第五个参数设置最终的纹理的宽度和高度。我们之前加载图像的时候储存了它们，所以我们使用对应的变量。
+    - 下个参数应该总是被设为0（历史遗留的问题）。
+    - 第七第八个参数定义了源图的格式和数据类型。我们使用RGB值加载这个图像，并把它们储存为char(byte)数组，我们将会传入对应值。
+    - 最后一个参数是真正的图像数据。
+    </font>
+
+    当调用glTexImage2D时，当前绑定的纹理对象就会被附加上纹理图像。然而，目前只有基本级别(Base-level)的纹理图像被加载了，如果要使用多级渐远纹理，我们必须手动设置所有不同的图像（不断递增第二个参数）。或者，直接在生成纹理之后调用glGenerateMipmap。这会为当前绑定的纹理自动生成所有需要的多级渐远纹理。
+    
+    - 第4步：生成了纹理和相应的多级渐远纹理后，释放图像的内存
+    ```c++
+    stbi_image_free(data);
+    ```
+    - 知识点2：整个步骤流程源码：
+    ```c++
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    // 为当前绑定的纹理对象设置环绕、过滤方式
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);   
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // 加载并生成纹理
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load("container.jpg", &width, &height, &nrChannels, 0);
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cout << "Failed to load texture" << std::endl;
+    }
+    stbi_image_free(data);
+    ```
+### 讨论点6：应用纹理
+### 知识点总结：
+- 知识点1：使用glDrawElements绘制图案，必须使用纹理坐标更新顶点数据：
+    ```c++
+    float vertices[] = {
+    //    ---- 位置 ----      ---- 颜色 ----    - 纹理坐标 -
+        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 右上
+        0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 右下
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,  // 左下
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f   // 左上
+    };
+    ```
+   具体的顶点格式如下：
+   <div align="center">
+   <img src="https://learnopengl-cn.github.io/img/01/06/vertex_attribute_pointer_interleaved_textures.png"/>
+   </div>
+    
+    按照上面的顶点结构和内存中的顶点属性步长来设置顶点属性：
+
+   ```c++
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+   ```
+- 知识点2： 调整顶点着色器使其能够接受顶点坐标为一个顶点属性，并把坐标传给片段着色器：
+    ```c++
+    #version 330 core
+    layout (location = 0) in vec3 aPos;
+    layout (location = 1) in vec3 aColor;
+    layout (location = 2) in vec2 aTexCoord;
+
+    out vec3 ourColor;
+    out vec2 TexCoord;
+
+    void main()
+    {
+        gl_Position = vec4(aPos, 1.0);
+        ourColor = aColor;
+        TexCoord = aTexCoord;
+    }
+    ```
+    
+    片段着色器应该接下来会把输出变量TexCoord作为输入变量。
+- 知识点3：片段着色器也应该能访问纹理对象，GLSL有一个供纹理对象使用的内建数据类型，叫做采样器(Sampler)，它以纹理类型作为后缀。可以简单声明一个uniform sampler2D把一个纹理添加到片段着色器中，稍后我们会把纹理赋值给这个uniform。
+    ```c++
+    #version 330 core
+    out vec4 FragColor;
+
+    in vec3 ourColor;
+    in vec2 TexCoord;
+
+    uniform sampler2D ourTexture;
+
+    void main()
+    {
+        FragColor = texture(ourTexture, TexCoord);
+    }
+    ```
+    使用GLSL内建的texture函数来采样纹理的颜色，它第一个参数是纹理采样器，第二个参数是对应的纹理坐标。texture函数会使用之前设置的纹理参数对相应的颜色值进行采样。这个片段着色器的输出就是纹理的（插值）纹理坐标上的(过滤后的)颜色。
+
+- 知识点4：调用glDrawElements之前绑定纹理了，它会自动把纹理赋值给片段着色器的采样器；
+    ```c++
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    ```
+    最终实现的效果：
+    <div align="center">
+    <img src="https://learnopengl-cn.github.io/img/01/06/textures2.png"/>
+    </div>
+- 知识点5：<font color=red>注意：</font>在一些驱动中，必须要对每个采样器uniform都附加上纹理单元才可以，这个会在下面介绍。
+- 知识点6：可以把得到的纹理颜色与顶点颜色混合，来获得更有趣的效果。
+    ```c++
+    FragColor = texture(ourTexture, TexCoord) * vec4(ourColor, 1.0);
+    ```
+    最终实现的效果：
+    <div align="center">
+    <img src="https://learnopengl-cn.github.io/img/01/06/textures_funky.png"/>
+    </div>
+
+### 讨论点7：纹理单元
+### 知识点总结：
+- 知识点1：纹理单元(Texture Unit)：使用glUniform1i，可以给纹理采样器分配一个位置值，能够在一个片段着色器中设置多个纹理。
+    - 一个纹理的默认纹理单元是0，它是默认的激活纹理单元.
+    - 纹理单元的主要目的是让着色器中可以使用多于一个的纹理;
+    - 通过把纹理单元赋值给采样器，可以一次绑定多个纹理，只要激活对应的纹理单元,就可以像glBindTexture一样，可以使用glActiveTexture激活纹理单元，传入需要使用的纹理单元。
+    ```c++
+    glActiveTexture(GL_TEXTURE0); // 在绑定纹理之前先激活纹理单元
+    glBindTexture(GL_TEXTURE_2D, texture);
+    ```
+    - 激活纹理单元之后，接下来的glBindTexture函数调用会绑定这个纹理到当前激活的纹理单元，纹理单元GL_TEXTURE0默认总是被激活，所以当使用glBindTexture的时候，无需激活任何纹理单元。
+- 知识点2：OpenGL至少保证有16个纹理单元供你使用，也就是说你可以激活从GL_TEXTURE0到GL_TEXTRUE15。
+    - 它们都是按顺序定义的，所以也可以通过GL_TEXTURE0 + 8的方式获得GL_TEXTURE8，这在当需要循环一些纹理单元的时候会很有用。
+    ```c++
+    #version 330 core
+    ...
+
+    uniform sampler2D texture1;
+    uniform sampler2D texture2;
+
+    void main()
+    {
+        FragColor = mix(texture(texture1, TexCoord), texture(texture2, TexCoord), 0.2);
+    }
+    ```
+    - 最终输出颜色现在是两个纹理的结合。GLSL内建的mix函数需要接受两个值作为参数，并对它们根据第三个参数进行线性插值。如果第三个值是0.0，它会返回第一个输入；如果是1.0，会返回第二个输入值。0.2会返回80%的第一个输入颜色和20%的第二个输入颜色，即返回两个纹理的混合色。
+    - 先绑定两个纹理到对应的纹理单元，然后定义哪个uniform采样器对应哪个纹理单元。
+        ```c++
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture1);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture2);
+
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        ```
+    - 还要通过使用glUniform1i设置每个采样器的方式告诉OpenGL每个着色器采样器属于哪个纹理单元
+        ```c++
+        ourShader.use(); // 不要忘记在设置uniform变量之前激活着色器程序！
+        glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0); // 手动设置
+        ourShader.setInt("texture2", 1); // 或者使用着色器类设置
+
+        while(...) 
+        {
+            [...]
+        }
+        ```
+        最终实现的效果：
+    <div align="center">
+    <img src="https://learnopengl-cn.github.io/img/01/06/textures_combined.png"/>
+    </div>
+
+    - 因为OpenGL要求y轴0.0坐标是在图片的底部的，但是图片的y轴0.0坐标通常在顶部。很幸运，stb_image.h能够在图像加载时帮助我们翻转y轴，只需要在加载任何图像前加入以下语句即可.
+        ```c++
+        stbi_set_flip_vertically_on_load(true);
+        ```
+    <div align="center">
+    <img src="https://learnopengl-cn.github.io/img/01/06/textures_combined2.png"/>
+    </div>
+
+    
