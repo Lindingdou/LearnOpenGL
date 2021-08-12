@@ -157,7 +157,7 @@ glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     ```c++
     stbi_image_free(data);
     ```
-    - 知识点2：整个步骤流程源码：
+- 知识点2：整个步骤流程源码：
     ```c++
     unsigned int texture;
     glGenTextures(1, &texture);
