@@ -11,13 +11,6 @@ learnOpenGL
 
 
 ## 2.6 纹理 
-
-
-
-
-
-
-
 ### 识点总结:
 
 - 知识点1：“增加顶点会徒增性能开销，因此采用纹理来增加对物体细节的描述”
@@ -327,4 +320,99 @@ glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     <img src="https://learnopengl-cn.github.io/img/01/06/textures_combined2.png"/>
     </div>
 
+
+## 2.7 变换
+### 讨论点1：向量
+### 知识点总结：
+- 知识点1：点乘：两个向量的点乘等于它们的数乘结果乘以两个向量之间夹角的余弦值
+$$ \bar{v} \cdot \bar{k} = ||\bar{v}|| \cdot ||\bar{k}|| \cdot \cos \theta
+$$
+- 知识点2：也可以通过点乘的结果计算两个非单位向量的夹角，点乘的结果除以两个向量的长度之积，得到的结果就是夹角的余弦值，即cosθ.
+$$\cos \theta = \frac{\bar{v} \cdot \bar{k}}{||\bar{v}|| \cdot ||\bar{k}||}$$
+- 知识点3：点乘运算方式：
+$$\begin{pmatrix} \color{red}{0.6} \\ -\color{green}{0.8} \\ \color{blue}0 \end{pmatrix} \cdot \begin{pmatrix} \color{red}0 \\ \color{green}1 \\ \color{blue}0 \end{pmatrix} = (\color{red}{0.6} * \color{red}0) + (-\color{green}{0.8} * \color{green}1) + (\color{blue}0 * \color{blue}0) = -0.8$$
+- 知识点4：叉乘只在3D空间中有定义，它需要两个不平行向量作为输入，生成一个正交于两个输入向量的第三个向量。如果输入的两个向量也是正交的，那么叉乘之后将会产生3个互相正交的向量。
+<div align=center>
+<img src="https://learnopengl-cn.github.io/img/01/07/vectors_crossproduct.png"/>
+</div>
+
+- 知识点5：叉乘运算方式：
+$$\begin{pmatrix} \color{red}{A_{x}} \\ \color{green}{A_{y}} \\ \color{blue}{A_{z}} \end{pmatrix} \times \begin{pmatrix} \color{red}{B_{x}} \\ \color{green}{B_{y}} \\ \color{blue}{B_{z}}  \end{pmatrix} = \begin{pmatrix} \color{green}{A_{y}} \cdot \color{blue}{B_{z}} - \color{blue}{A_{z}} \cdot \color{green}{B_{y}} \\ \color{blue}{A_{z}} \cdot \color{red}{B_{x}} - \color{red}{A_{x}} \cdot \color{blue}{B_{z}} \\ \color{red}{A_{x}} \cdot \color{green}{B_{y}} - \color{green}{A_{y}} \cdot \color{red}{B_{x}} \end{pmatrix}$$
+- 知识点6：矩阵的加法和减法只对同维度的矩阵才是有定义。
+- 知识点7：简单来说，标量数乘标量就是用它的值缩放(Scale)矩阵的所有元素。
+### 讨论点2：矩阵
+- 知识点8：矩阵乘法的限制：
+    - 只有当左侧矩阵的列数与右侧矩阵的行数相等，两个矩阵才能相乘。
+    - 矩阵相乘不遵守交换律(Commutative)，也就是说A⋅B≠B⋅A。
+    <div align=center>
+    <img src="https://learnopengl-cn.github.io/img/01/07/matrix_multiplication.png"/>
+    </div>
+### 讨论点3：矩阵与向量相乘
+- 知识点9：缩放：对一个向量进行缩放(Scaling)就是对向量的长度进行缩放，而保持它的方向不变。
+- 知识点10：不均匀(Non-uniform)缩放/均匀缩放(Uniform Scale)：每个轴的缩放因子是否一样
+- 知识点11：缩放变量表示为(S1,S2,S3)，则可以为任意向量(x,y,z)定义一个缩放矩阵
+$$\begin{bmatrix} \color{red}{S_1} & \color{red}0 & \color{red}0 & \color{red}0 \\ \color{green}0 & \color{green}{S_2} & \color{green}0 & \color{green}0 \\ \color{blue}0 & \color{blue}0 & \color{blue}{S_3} & \color{blue}0 \\ \color{purple}0 & \color{purple}0 & \color{purple}0 & \color{purple}1 \end{bmatrix} \cdot \begin{pmatrix} x \\ y \\ z \\ 1 \end{pmatrix} = \begin{pmatrix} \color{red}{S_1} \cdot x \\ \color{green}{S_2} \cdot y \\ \color{blue}{S_3} \cdot z \\ 1 \end{pmatrix}$$
+- 知识点12：位移(Translation)是在原始向量的基础上加上另一个向量从而获得一个在不同位置的新向量的过程，从而在位移向量基础上移动了原始向量。
+- 知识点13：如果把位移向量表示为(Tx,Ty,Tz)，就能把位移矩阵定义为：
+$$\begin{bmatrix}  \color{red}1 & \color{red}0 & \color{red}0 & \color{red}{T_x} \\ \color{green}0 & \color{green}1 & \color{green}0 & \color{green}{T_y} \\ \color{blue}0 & \color{blue}0 & \color{blue}1 & \color{blue}{T_z} \\ \color{purple}0 & \color{purple}0 & \color{purple}0 & \color{purple}1 \end{bmatrix} \cdot \begin{pmatrix} x \\ y \\ z \\ 1 \end{pmatrix} = \begin{pmatrix} x + \color{red}{T_x} \\ y + \color{green}{T_y} \\ z + \color{blue}{T_z} \\ 1 \end{pmatrix}$$
+- 知识点14：旋转矩阵在3D空间中每个单位轴都有不同定义，旋转角度用θ表示：
     
+    - 沿x轴旋转：
+    $$\begin{bmatrix} \color{red}1 & \color{red}0 & \color{red}0 & \color{red}0 \\ \color{green}0 & \color{green}{\cos \theta} & - \color{green}{\sin \theta} & \color{green}0 \\ \color{blue}0 & \color{blue}{\sin \theta} & \color{blue}{\cos \theta} & \color{blue}0 \\ \color{purple}0 & \color{purple}0 & \color{purple}0 & \color{purple}1 \end{bmatrix} \cdot \begin{pmatrix} x \\ y \\ z \\ 1 \end{pmatrix} = \begin{pmatrix} x \\ \color{green}{\cos \theta} \cdot y - \color{green}{\sin \theta} \cdot z \\ \color{blue}{\sin \theta} \cdot y + \color{blue}{\cos \theta} \cdot z \\ 1 \end{pmatrix}$$
+    - 沿y轴旋转：
+    $$\begin{bmatrix} \color{red}{\cos \theta} & \color{red}0 & \color{red}{\sin \theta} & \color{red}0 \\ \color{green}0 & \color{green}1 & \color{green}0 & \color{green}0 \\ - \color{blue}{\sin \theta} & \color{blue}0 & \color{blue}{\cos \theta} & \color{blue}0 \\ \color{purple}0 & \color{purple}0 & \color{purple}0 & \color{purple}1 \end{bmatrix} \cdot \begin{pmatrix} x \\ y \\ z \\ 1 \end{pmatrix} = \begin{pmatrix} \color{red}{\cos \theta} \cdot x + \color{red}{\sin \theta} \cdot z \\ y \\ - \color{blue}{\sin \theta} \cdot x + \color{blue}{\cos \theta} \cdot z \\ 1 \end{pmatrix}$$
+    - 沿z轴旋转：
+    $$\begin{bmatrix} \color{red}{\cos \theta} & - \color{red}{\sin \theta} & \color{red}0 & \color{red}0 \\ \color{green}{\sin \theta} & \color{green}{\cos \theta} & \color{green}0 & \color{green}0 \\ \color{blue}0 & \color{blue}0 & \color{blue}1 & \color{blue}0 \\ \color{purple}0 & \color{purple}0 & \color{purple}0 & \color{purple}1 \end{bmatrix} \cdot \begin{pmatrix} x \\ y \\ z \\ 1 \end{pmatrix} = \begin{pmatrix} \color{red}{\cos \theta} \cdot x - \color{red}{\sin \theta} \cdot y  \\ \color{green}{\sin \theta} \cdot x + \color{green}{\cos \theta} \cdot y \\ z \\ 1 \end{pmatrix}$$
+### 讨论点4：矩阵的组合
+- 知识点15：
+$$\begin{bmatrix} \color{red}2 & \color{red}0 & \color{red}0 & \color{red}1 \\ \color{green}0 & \color{green}2 & \color{green}0 & \color{green}2 \\ \color{blue}0 & \color{blue}0 & \color{blue}2 & \color{blue}3 \\ \color{purple}0 & \color{purple}0 & \color{purple}0 & \color{purple}1 \end{bmatrix} . \begin{bmatrix} x \\ y \\ z \\ 1 \end{bmatrix} = \begin{bmatrix} \color{red}2x + \color{red}1 \\ \color{green}2y + \color{green}2  \\ \color{blue}2z + \color{blue}3 \\ 1 \end{bmatrix}$$
+### 讨论点5：GLM
+- 知识点16：GLM是OpenGL Mathematics的缩写，它是一个只有头文件的库，也就是说我们只需包含对应的头文件就行了，不用链接和编译。
+- 知识点17：GLM库从0.9.9版本起，默认会将矩阵类型初始化为一个零矩阵（所有元素均为0），而不是单位矩阵（对角元素为1，其它元素为0）。如果你使用的是0.9.9或0.9.9以上的版本，你需要将所有的矩阵初始化改为 glm::mat4 mat = glm::mat4(1.0f)。
+- 知识点18：使用GLM库的步骤：
+    - 引用GLM库：
+    ```c++
+    #include <glm/glm.hpp>
+    #include <glm/gtc/matrix_transform.hpp>
+    #include <glm/gtc/type_ptr.hpp>
+    ```
+    - 变换操作(平移）：
+    ```c++
+    glm::vec4 vec(1.0f, 0.0f, 0.0f, 1.0f);
+    // 译注：下面就是矩阵初始化的一个例子，如果使用的是0.9.9及以上版本
+    // 下面这行代码就需要改为:
+    // glm::mat4 trans = glm::mat4(1.0f)
+    // 之后将不再进行提示
+    glm::mat4 trans;
+    trans = glm::translate(trans, glm::vec3(1.0f, 1.0f, 0.0f));
+    vec = trans * vec;
+    std::cout << vec.x << vec.y << vec.z << std::endl;
+    ```
+    - 变换操作（旋转、缩放）：
+    ```c++
+    glm::mat4 trans;
+    trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
+    trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+    ```
+    - 将矩阵传递给着色器：
+    ```c++
+    #version 330 core
+    layout (location = 0) in vec3 aPos;
+    layout (location = 1) in vec2 aTexCoord;
+
+    out vec2 TexCoord;
+
+    uniform mat4 transform;
+
+    void main()
+    {
+        gl_Position = transform * vec4(aPos, 1.0f);
+        TexCoord = vec2(aTexCoord.x, 1.0 - aTexCoord.y);
+    }
+    ```
+    - 查询uniform变量地址，把矩阵数据发送给着色器
+    ```c++
+    unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
+    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+    ```
+    <font Color=greenblue>glUniformMatrix4fv函数的四个参数解释</font>：第一个参数是uniform的位置值。第二个参数表示将要发送多少个矩阵，这里是1。第三个参数询问是否希望对我们的矩阵进行置换(Transpose)，也就是说交换我们矩阵的行和列。OpenGL开发者通常使用一种内部矩阵布局，叫做**列主序(Column-major Ordering)布局**。GLM的默认布局就是列主序，所以并不需要置换矩阵，填GL_FALSE。最后一个参数是真正的矩阵数据，**但是GLM并不是把它们的矩阵储存为OpenGL所希望接受的那种**，因此要先用GLM的自带的函数value_ptr来变换这些数据。
