@@ -595,5 +595,178 @@ glEnable(GL_DEPTH_TEST);
 ```C++
 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 ```
+## 2.9 摄像机
+### 知识点总结：
+### 讨论点1：摄像机/观察空间
+- 知识点1：以摄像机的视角作为场景原点时场景中所有的顶点坐标：观察矩阵把所有的世界坐标变换为相对于摄像机位置与方向的观察坐标。
+- 知识点2：要定义一个摄像机，需要它在世界空间中的位置、观察的方向、一个指向它右测的向量以及一个指向它上方的向量。
+![](https://learnopengl-cn.github.io/img/01/09/camera_axes.png)
+### 讨论点2：摄像机位置
+- 知识点3：
+    - 摄像机位置：摄像机位置简单来说就是世界空间中一个指向摄像机位置的向量。
+    ```c++
+    glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+    ```
+    - 摄像机方向：用场景原点向量减去摄像机位置向量的结果就是摄像机的指向向量。
+    ```c++
+    glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 cameraDirection = glm::normalize(cameraPos - cameraTarget);
+    ```
+    - 右轴：代表摄像机空间的x轴的正方向。【小技巧：先定义一个上向量(Up Vector)。接下来把上向量和第二步得到的方向向量进行叉乘。两个向量叉乘的结果会同时垂直于两向量，因此我们会得到指向x轴正方向的那个向量（如果我们交换两个向量叉乘的顺序就会得到相反的指向x轴负方向的向量）】
+    ```c++
+    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f); 
+    glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraDirection));
+    ```
+    - 上轴:已经有了x轴向量和z轴向量，获取一个指向摄像机的正y轴向量就相对简单了：我们把右向量和方向向量进行叉乘.
+    ```c++
+    glm::vec3 cameraUp = glm::cross(cameraDirection, cameraRight);
+    ```
+### Look At
+- 知识点4： Look At矩阵：如果使用3个相互垂直（或非线性）的轴定义了一个坐标空间，则可以用这3个轴外加一个平移向量来创建一个矩阵，并且可以用这个矩阵乘以任何向量来将其变换到那个坐标空间：
+<div align=center>
+<img src="https://latex.vimsky.com/test.image.latex.php?fmt=svg&val=%255Cdpi%257B150%257D%2520%255Cnormalsize%2520LookAt%2520%253D%2520%255Cbegin%257Bbmatrix%257D%2520%255Ccolor%257Bred%257D%257BR_x%257D%2520%2526%2520%255Ccolor%257Bred%257D%257BR_y%257D%2520%2526%2520%255Ccolor%257Bred%257D%257BR_z%257D%2520%2526%25200%2520%255C%255C%2520%255Ccolor%257Bgreen%257D%257BU_x%257D%2520%2526%2520%255Ccolor%257Bgreen%257D%257BU_y%257D%2520%2526%2520%255Ccolor%257Bgreen%257D%257BU_z%257D%2520%2526%25200%2520%255C%255C%2520%255Ccolor%257Bblue%257D%257BD_x%257D%2520%2526%2520%255Ccolor%257Bblue%257D%257BD_y%257D%2520%2526%2520%255Ccolor%257Bblue%257D%257BD_z%257D%2520%2526%25200%2520%255C%255C%25200%2520%2526%25200%2520%2526%25200%2520%2526%25201%2520%255Cend%257Bbmatrix%257D%2520*%2520%255Cbegin%257Bbmatrix%257D%25201%2520%2526%25200%2520%2526%25200%2520%2526%2520-%255Ccolor%257Bpurple%257D%257BP_x%257D%2520%255C%255C%25200%2520%2526%25201%2520%2526%25200%2520%2526%2520-%255Ccolor%257Bpurple%257D%257BP_y%257D%2520%255C%255C%25200%2520%2526%25200%2520%2526%25201%2520%2526%2520-%255Ccolor%257Bpurple%257D%257BP_z%257D%2520%255C%255C%25200%2520%2526%25200%2520%2526%25200%2520%2526%25201%2520%255Cend%257Bbmatrix%257D&dl=0"/>
+</div>
+- 知识点5：定义一个摄像机位置，一个目标位置和一个表示世界空间中的上向量的向量（我们计算右向量使用的那个上向量），则采用GLM创建LookAt矩阵的具体方法如下：
+```c++
+glm::mat4 view;
+view = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f), 
+           glm::vec3(0.0f, 0.0f, 0.0f), 
+           glm::vec3(0.0f, 1.0f, 0.0f));
+view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+```
 
+### 移动速度
+- 知识点6：图形程序和游戏通常会跟踪一个时间差(Deltatime)变量，它储存了渲染上一帧所用的时间。
+- 知识点7：跟踪两个全局变量来计算deltaTime值：
+    ```c++
+    float deltaTime = 0.0f; // 当前帧与上一帧的时间差
+    float lastFrame = 0.0f; // 上一帧的时间
+    ```
+- 知识点8：在每一帧中计算出新的deltaTime以备后用。
+    ```c++
+    float currentFrame = glfwGetTime();
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
+    ```
+- 知识点9：有了deltaTime，在计算速度的时候可以将其考虑进去了：
+    ```c++
+    void processInput(GLFWwindow *window)
+    {
+    float cameraSpeed = 2.5f * deltaTime;
+    ...
+    }
+    ```
+### 视角移动-欧拉角 
+- 知识点10：欧拉角(Euler Angle)是可以表示3D空间中任何旋转的3个值，由莱昂哈德·欧拉(Leonhard Euler)在18世纪提出。一共有3种欧拉角：俯仰角(Pitch)、偏航角(Yaw)和滚转角(Roll)，下面的图片展示了它们的含义：
+![](https://learnopengl-cn.github.io/img/01/09/camera_pitch_yaw_roll.png)
+- 知识点11：俯仰角是描述我们如何往上或往下看的角，可以在第一张图中看到。第二张图展示了偏航角，偏航角表示我们往左和往右看的程度。滚转角代表我们如何翻滚摄像机，通常在太空飞船的摄像机中使用。每个欧拉角都有一个值来表示，把三个角结合起来我们就能够计算3D空间中任何的旋转向量了。
+### 鼠标输入
+- 知识点12：偏航角和俯仰角是通过鼠标（或手柄）移动获得的，水平的移动影响偏航角，竖直的移动影响俯仰角。它的原理就是，储存上一帧鼠标的位置，在当前帧中我们当前计算鼠标位置与上一帧的位置相差多少。如果水平/竖直差别越大那么俯仰角或偏航角就改变越大，也就是摄像机需要移动更多的距离。 
+- 知识点13：隐藏光标并捕捉(Capture)光标的操作：
+    ```c++
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    ```
+- 知识点14：GLFW监听鼠标移动事件的方法
+    ```c++
+    void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+    ```
+- 知识点15：注册监听鼠标移动事件：
+    ```c++
+    glfwSetCursorPosCallback(window, mouse_callback);
+    ```
+- 知识点16：处理FPS风格摄像机的鼠标输入，需要考虑的内容：
+    - 计算鼠标距上一帧的偏移量。
+    - 把偏移量添加到摄像机的俯仰角和偏航角中。
+    - 对偏航角和俯仰角进行最大和最小值的限制。
+    - 计算方向向量。
+- 知识点17：
+    - 第一步是计算鼠标自上一帧的偏移量。
+    ```c++
+    float lastX = 400, lastY = 300;
+    ```
+    - 第二步计算当前帧和上一帧鼠标位置的偏移量。
+    ```c++
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // 注意这里是相反的，因为y坐标是从底部往顶部依次增大的
+    lastX = xpos;
+    lastY = ypos;
+    float sensitivity = 0.05f;
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+    ```
+    - 第三步把偏移量加到全局变量pitch和yaw上。
+    ```c++
+    yaw   += xoffset;
+    pitch += yoffset;
+    ```
+    - 第四步给摄像机添加一些限制
+    ```c++
+    if(pitch > 89.0f)
+    pitch =  89.0f;
+    if(pitch < -89.0f)
+    pitch = -89.0f;
+    ```
+    - 第五步通过俯仰角和偏航角来计算以得到真正的方向向量
+    ```c++
+    glm::vec3 front;
+    front.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
+    front.y = sin(glm::radians(pitch));
+    front.z = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
+    cameraFront = glm::normalize(front);
+    ```
+    - 第六步对第一此获取鼠标输入进行检测，以降低鼠标偏移量突跳
+    ```c++
+    void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+    {
+        if(firstMouse)
+        {
+            lastX = xpos;
+            lastY = ypos;
+            firstMouse = false;
+        }
 
+        float xoffset = xpos - lastX;
+        float yoffset = lastY - ypos; 
+        lastX = xpos;
+        lastY = ypos;
+
+        float sensitivity = 0.05;
+        xoffset *= sensitivity;
+        yoffset *= sensitivity;
+
+        yaw   += xoffset;
+        pitch += yoffset;
+
+        if(pitch > 89.0f)
+            pitch = 89.0f;
+        if(pitch < -89.0f)
+            pitch = -89.0f;
+
+        glm::vec3 front;
+        front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        front.y = sin(glm::radians(pitch));
+        front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        cameraFront = glm::normalize(front);
+    }
+    ```
+### 缩放
+- 知识点18：视野(Field of View)或fov定义了可以看到场景中多大的范围。
+- 知识点19：当视野变小时，场景投影出来的空间就会减小，产生放大(Zoom In)了的感觉。
+- 知识点20：鼠标滚轮的回调函数：
+    ```c++
+    void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+    {
+    if(fov >= 1.0f && fov <= 45.0f)
+        fov -= yoffset;
+    if(fov <= 1.0f)
+        fov = 1.0f;
+    if(fov >= 45.0f)
+        fov = 45.0f;
+    }
+    ```
+    当滚动鼠标滚轮的时候，yoffset值代表我们竖直滚动的大小。当scroll_callback函数被调用后，我们改变全局变量fov变量的内容。因为45.0f是默认的视野值，我们将会把缩放级别(Zoom Level)限制在1.0f到45.0f。
+- 知识点21：在每一帧都必须把透视投影矩阵上传到GPU，但现在使用fov变量作为它的视野：
+    ```c++
+    projection = glm::perspective(glm::radians(fov), 800.0f / 600.0f, 0.1f, 100.0f);
+    ```
+- 知识点22：注册鼠标滚轮的回调函数
