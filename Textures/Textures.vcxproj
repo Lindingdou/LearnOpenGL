@@ -131,9 +131,11 @@
     <None Include="Shader.vs" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\glfw-3.3.4.bin.WIN32\glad\src\glad.c" />
     <ClCompile Include="Textureclass.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="shader.h" />
     <ClInclude Include="std_image.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
