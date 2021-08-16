@@ -770,3 +770,6 @@ view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
     projection = glm::perspective(glm::radians(fov), 800.0f / 600.0f, 0.1f, 100.0f);
     ```
 - 知识点22：注册鼠标滚轮的回调函数
+    ```c++
+    glfwSetScrollCallback(window, scroll_callback);
+    ```
