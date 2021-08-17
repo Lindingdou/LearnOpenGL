@@ -191,18 +191,18 @@ private:
 				glGetShaderInfoLog(shader, 1024, NULL, infoLog);
 				std::cout << "ERROR::SHADER_COMPILATION_ERROR OF TYPE:" << type << "\n" << infoLog << "\n -- ------------------------------ --";
 							
-			}
-			else
+			}			
+		}
+		else
+		{
+			glGetProgramiv(shader, GL_LINK_STATUS, &success);
+			if (!success)
 			{
-				glGetProgramiv(shader, GL_LINK_STATUS,&success);
-				if (!success)
-				{
-					glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-					std::cout << "ERROR::PROGRAM_LINKING_ERROR OF TYPE:" << type << "\n" << infoLog << "\n -- --------------------------- --";
-					
-				}
-				
+				glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+				std::cout << "ERROR::PROGRAM_LINKING_ERROR OF TYPE:" << type << "\n" << infoLog << "\n -- --------------------------- --";
+
 			}
+
 		}
 	}
 };
